@@ -1,0 +1,29 @@
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ghcr.io
+      - name: checkout repo
+        uses: actions/checkout@v4
+      - name: Set Upstream Tag
+        id: upstreamTag
+        run: |
+          upstreamTag="$(grep FROM Dockerfile | cut -f 2 -d ':')"
+          echo "UPSTREAM_TAG=$upstreamTag" >> "$GITHUB_OUTPUT"
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v6.3.0
+        env:
+         UPSTREAM_TAG: ${{ steps.upstreamTag.outputs.UPSTREAM_TAG }}
+        with:
+          push: true
+          tags: ghcr.io/m4us1ne/ceph-fleetlock:${{ env.UPSTREAM_TAG }}-${{ github.ref_name }}
+
+on:
+  push:
+    tags:
+      - "*"
