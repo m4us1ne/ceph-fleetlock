@@ -1,0 +1,35 @@
+service_type: container
+service_id: cephlock-keepalived
+placement:
+  label: "mgr"
+spec:
+  image: quay.io/ceph/keepalived:2.2.4
+  args:
+    - "--cap-add=NET_RAW"
+    - "--cap-add=NET_ADMIN"
+    - "--net=host"
+  volume_mounts:
+    cephlock-keepalived: /etc/keepalived
+  dirs:
+    - cephlock-keepalived
+  files:
+    cephlock-keepalived/keepalived.conf:
+      - vrrp_script check_backend {
+      -   script "/usr/bin/curl http://localhost:8080/v1/health"
+      -   weight 80
+      -   interval 2
+      -   rise 2
+      -   fall 2 }
+      - vrrp_instance VI_0 {
+      -   state MASTER
+      -   priority 100
+      -   interface main
+      -   virtual_router_id 45
+      -   advert_int 1
+      -   authentication {
+      -       auth_type PASS
+      -       auth_pass histosdfsdfczr }
+      -   virtual_ipaddress {
+      -     10.0.15.81/24 dev main }
+      -   track_script {
+      -       check_backend } }
